@@ -1,0 +1,668 @@
+fixed_html = '''<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genra - Bytt tjeneste, bygg fellesskap</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav id="navbar">
+        <div class="nav-content">
+            <a href="#" class="logo" onclick="showSection('landing')">genra.</a>
+            <div class="nav-links" id="navLinks">
+                <a href="#how-it-works" onclick="scrollToSection('how-it-works')">Hvordan det fungerer</a>
+                <a href="#about" onclick="scrollToSection('about')">Om oss</a>
+                <a href="#team" onclick="scrollToSection('team')">Teamet</a>
+                <a href="#contact" onclick="scrollToSection('contact')">Kontakt</a>
+            </div>
+            <div class="nav-user" id="navUser">
+                <span id="userNameDisplay"></span>
+                <div class="user-avatar" id="userAvatar" onclick="showSection('dashboard')"></div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Landing Page -->
+    <div id="landing">
+        <!-- Hero -->
+        <section class="hero">
+            <h1 class="hero-logo">genra.</h1>
+            <p class="hero-tagline">Bytt tjeneste — Bygg fellesskap — Helt kostnadsfritt</p>
+            <div class="hero-buttons">
+                <button class="btn btn-primary" onclick="showSection('auth')">Start nå</button>
+                <button class="btn btn-secondary" onclick="showAuthTab('login')">Logg inn</button>
+            </div>
+        </section>
+
+        <!-- How it Works -->
+        <section id="how-it-works" class="how-it-works">
+            <h2 class="section-title fade-in">Hvordan det fungerer</h2>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-icon">👤+</div>
+                    <h3 class="step-title">1. Registrer deg</h3>
+                    <p class="step-desc">Opprett en profil og fortell oss hva du kan tilby og hva du trenger hjelp med.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-icon">🔍</div>
+                    <h3 class="step-title">2. Finn en match</h3>
+                    <p class="step-desc">Søk etter folk som kan hjelpe deg, eller som trenger det du tilbyr.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-icon">💬</div>
+                    <h3 class="step-title">3. Bytt tjeneste</h3>
+                    <p class="step-desc">Ta kontakt via chat, avtal detaljer, og hjelp hverandre. Helt kostnadsfritt!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- About -->
+        <section id="about" class="about">
+            <div class="about-left">
+                <h2 class="about-title fade-in">Om oss</h2>
+                <div class="values">
+                    <div class="value-item fade-in-delay-1">
+                        <div class="value-icon">🖤</div>
+                        <div class="value-label">Omsorg</div>
+                    </div>
+                    <div class="value-item fade-in-delay-2">
+                        <div class="value-icon">👥</div>
+                        <div class="value-label">Fellesskap</div>
+                    </div>
+                    <div class="value-item fade-in-delay-3">
+                        <div class="value-icon">🔄</div>
+                        <div class="value-label">Gjensidighet</div>
+                    </div>
+                </div>
+            </div>
+            <div class="about-text">
+                <p>Vi i Genra er en studentbedrift som jobber for å skape en plattform hvor folk kan hjelpe hverandre helt kostnadsfritt. Vårt mål er å bygge et fellesskap basert på tillit og gjensidighet.</p>
+                <p>Vi tror på at alle har noe å tilby, enten det er å lære bort et språk, bistå med hagearbeid, eller fikse en vask. Ved å bytte tjenester skaper vi verdier som går utover penger.</p>
+                <p>Vi bygger relasjoner og styrker lokalsamfunnet. Sammen skaper vi en verden hvor hjelp er tilgjengelig for alle, uavhengig av økonomisk situasjon.</p>
+                <p>Sikkerhet og tillit er fundamentet i alt vi gjør. Vi verifiserer alle brukere og har et vurderingssystem som sikrer at alle får en trygg og positiv opplevelse. Dine data er alltid beskyttet, og du bestemmer selv hvem du vil samarbeide med.</p>
+                <p> Vi vil alltid være en plattform drevet av fellesskap, ikke profitt. Bli med du også! Enten du er student, pensjonist, eller midt i karrieren, har du noe unikt å bidra med.</p> 
+                <p>Oppdag hvor givende det er å hjelpe andre, og bli hjulpet selv.</p>
+            </div>
+        </section>
+
+        <!-- Team -->
+        <section id="team" class="team">
+            <h2 class="section-title fade-in">Møt teamet</h2>
+            <div class="team-grid">
+                <div class="team-card">
+                    <div class="team-avatar">
+                        <img src="emma.jpg" alt="Emma">
+                    </div>
+                    <h3 class="team-name">Emma Shérine<br>Collett Sikkel</h3>
+                    <p class="team-role">Daglig Leder</p>
+                </div>
+                <div class="team-card">
+                    <div class="team-avatar">
+                        <img src="grace.jpg" alt="Grace">
+                    </div>
+                    <h3 class="team-name">Grace Kenni<br>Oladejo</h3>
+                    <p class="team-role">Produktansvarlig</p>
+                </div>
+                <div class="team-card">
+                    <div class="team-avatar">
+                        <img src="barea.jpg" alt="Barea">
+                    </div>
+                    <h3 class="team-name">Barea Rafi</h3>
+                    <p class="team-role">Teknisk Ansvarlig</p>
+                </div>
+                <div class="team-card">
+                    <div class="team-avatar">
+                        <img src="abdi.jpg" alt="Abdi">
+                    </div>
+                    <h3 class="team-name">Abdirahman Noor<br>Abdullahi Hussein</h3>
+                    <p class="team-role">Økonomiansvarlig</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contact -->
+        <section id="contact" class="contact">
+            <div class="contact-info">
+                <h2>Kontakt oss</h2>
+                <p class="contact-intro">Har du spørsmål eller ønsker å vite mer om Genra? Ta gjerne kontakt med oss!</p>
+                
+                <div class="contact-item">
+                    <div class="contact-icon">✉️</div>
+                    <div>
+                        <div class="contact-label">E-post</div>
+                        <div class="contact-value">genrasb@gmail.com</div>
+                    </div>
+                </div>
+                
+                <div class="contact-item">
+                    <div class="contact-icon">📍</div>
+                    <div>
+                        <div class="contact-label">Adresse</div>
+                        <div class="contact-value">Kirkegata 23, Oslo</div>
+                    </div>
+                </div>
+                
+                <div class="contact-item">
+                    <div class="contact-icon">📷</div>
+                    <div>
+                        <div class="contact-label">Instagram</div>
+                        <div class="contact-value">@genrasb</div>
+                    </div>
+                </div>
+                
+                <div class="contact-item">
+                    <div class="contact-icon">💼</div>
+                    <div>
+                        <div class="contact-label">LinkedIn</div>
+                        <div class="contact-value">Genra SB</div>
+                    </div>
+                </div>
+                
+                <div class="contact-item">
+                    <div class="contact-icon">🎵</div>
+                    <div>
+                        <div class="contact-label">TikTok</div>
+                        <div class="contact-value">@genrasb</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="contact-form-wrapper">
+                <form id="contactForm" onsubmit="handleContactSubmit(event)">
+                    <div class="form-group">
+                        <label>Navn</label>
+                        <input type="text" placeholder="Ditt navn" required>
+                    </div>
+                    <div class="form-group">
+                        <label>E-post</label>
+                        <input type="email" placeholder="din@epost.no" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Melding</label>
+                        <textarea placeholder="Skriv din melding her..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Send melding</button>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <!-- Auth Page -->
+    <div id="auth" class="hidden">
+        <div class="auth-container">
+            <div class="auth-box">
+                <div class="auth-header">
+                    <h1>Velkommen til Genra</h1>
+                    <p>Bytt tjenester, bygg fellesskap</p>
+                </div>
+
+                <div class="auth-tabs">
+                    <button class="auth-tab active" onclick="showAuthTab('register')" id="tab-register">Registrer deg</button>
+                    <button class="auth-tab" onclick="showAuthTab('login')" id="tab-login">Logg inn</button>
+                </div>
+
+                <!-- Register Form -->
+                <form id="registerForm" class="auth-form active" onsubmit="handleRegister(event)">
+                    <div class="auth-methods">
+                        <button type="button" class="auth-method active" onclick="setAuthMethod('email')">E-post</button>
+                        <button type="button" class="auth-method" onclick="setAuthMethod('phone')">Telefon</button>
+                    </div>
+
+                    <div id="emailFields">
+                        <div class="form-group">
+                            <label>E-post</label>
+                            <input type="email" id="regEmail" placeholder="din@epost.no" required>
+                        </div>
+                    </div>
+
+                    <div id="phoneFields" style="display: none;">
+                        <div class="form-group">
+                            <label>Telefonnummer</label>
+                            <input type="tel" id="regPhone" placeholder="+47 123 45 678">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Brukernavn</label>
+                        <input type="text" id="regUsername" placeholder="Velg et brukernavn" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Passord</label>
+                        <input type="password" id="regPassword" placeholder="Lag et passord" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Bekreft passord</label>
+                        <input type="password" id="regPasswordConfirm" placeholder="Gjenta passordet" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Opprett konto</button>
+                </form>
+
+                <!-- Login Form -->
+                <form id="loginForm" class="auth-form" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label>E-post eller brukernavn</label>
+                        <input type="text" id="loginIdentifier" placeholder="din@epost.no" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Passord</label>
+                        <input type="password" id="loginPassword" placeholder="Ditt passord" required>
+                    </div>
+
+                    <div style="text-align: right; margin-bottom: 1rem;">
+                        <a href="#" style="color: var(--text-secondary); font-size: 0.9rem; text-decoration: none;">Glemt passord?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Logg inn</button>
+                </form>
+
+                <div class="divider">eller</div>
+
+                <button class="btn btn-secondary" style="width: 100%;" onclick="showSection('landing')">
+                    Tilbake til forsiden
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" class="hidden">
+        <div class="dashboard">
+            <section style="padding-top: 2rem;">
+                <div class="dashboard-header">
+                    <h1>Hei, <span id="dashboardUserName">Bruker</span>! 👋</h1>
+                    <p>Velkommen tilbake til Genra</p>
+                </div>
+
+                <div class="dashboard-grid">
+                    <aside class="sidebar">
+                        <div class="sidebar-menu">
+                            <div class="sidebar-item active" onclick="showDashboardTab('profile')" id="dash-tab-profile">
+                                <span>👤</span> Profil
+                            </div>
+                            <div class="sidebar-item" onclick="showDashboardTab('build')" id="dash-tab-build">
+                                <span>🏗️</span> Bygg Mennesket
+                            </div>
+                            <div class="sidebar-item" onclick="showDashboardTab('categories')" id="dash-tab-categories">
+                                <span>📂</span> Kategorier
+                            </div>
+                            <div class="sidebar-item" onclick="showDashboardTab('history')" id="dash-tab-history">
+                                <span>📊</span> Historikk
+                            </div>
+                            <div class="sidebar-item" onclick="logout()">
+                                <span>🚪</span> Logg ut
+                            </div>
+                        </div>
+                    </aside>
+
+                    <main class="dashboard-content">
+                        <!-- Profile Tab -->
+                        <div id="dash-content-profile" class="content-section active">
+                            <div class="profile-header">
+                                <div class="profile-avatar-large" id="profileAvatar">👤</div>
+                                <div class="profile-info">
+                                    <h2 id="profileName">Brukernavn</h2>
+                                    <p id="profileEmail">epost@example.com</p>
+                                </div>
+                            </div>
+
+                            <h3 style="margin-bottom: 1rem; font-size: 1.2rem;">Din statistikk</h3>
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-number" id="statGiven">0</div>
+                                    <div class="stat-label">Tjenester gitt</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number" id="statReceived">0</div>
+                                    <div class="stat-label">Tjenester mottatt</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number" id="statBalance">0</div>
+                                    <div class="stat-label">Balanse</div>
+                                </div>
+                            </div>
+
+                            <h3 style="margin-bottom: 1rem; font-size: 1.2rem;">Mine kategorier</h3>
+                            <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.95rem;">Velg kategoriene du tilhører (klikk for å velge/fjerne):</p>
+                            <div class="profile-categories" id="profileCategories">
+                                <button class="category-btn-small" onclick="toggleProfileCategory('akademisk')" data-category="akademisk">
+                                    <span class="category-icon">📚</span>
+                                    <span>Akademisk støtte</span>
+                                </button>
+                                <button class="category-btn-small" onclick="toggleProfileCategory('markedsforing')" data-category="markedsforing">
+                                    <span class="category-icon">🎨</span>
+                                    <span>Markedsføring og design</span>
+                                </button>
+                                <button class="category-btn-small" onclick="toggleProfileCategory('okonomi')" data-category="okonomi">
+                                    <span class="category-icon">💰</span>
+                                    <span>Økonomi og regnskap</span>
+                                </button>
+                                <button class="category-btn-small" onclick="toggleProfileCategory('praktiske')" data-category="praktiske">
+                                    <span class="category-icon">🔧</span>
+                                    <span>Praktiske tjenester</span>
+                                </button>
+                                <button class="category-btn-small" onclick="toggleProfileCategory('teknisk')" data-category="teknisk">
+                                    <span class="category-icon">💻</span>
+                                    <span>Teknisk bistand</span>
+                                </button>
+                                <button class="category-btn-small" onclick="toggleProfileCategory('hage')" data-category="hage">
+                                    <span class="category-icon">🌱</span>
+                                    <span>Hagearbeid og montering</span>
+                                </button>
+                                <button class="category-btn-small" onclick="toggleProfileCategory('nettverk')" data-category="nettverk">
+                                    <span class="category-icon">🤝</span>
+                                    <span>Nettverksbygging</span>
+                                </button>
+                            </div>
+
+                            <h3 style="margin-bottom: 1rem; font-size: 1.2rem; margin-top: 2rem;">Mine ferdigheter</h3>
+                            <div id="profileSkills" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                <p style="color: var(--text-secondary);">Du har ikke lagt til noen ferdigheter ennå.</p>
+                            </div>
+                        </div>
+
+                        <!-- Build Human Game Tab -->
+                        <div id="dash-content-build" class="content-section">
+                            <div class="game-container">
+                                <div class="game-header">
+                                    <h2>🏗️ Bygg Ditt Hjelpe-Menneske</h2>
+                                    <p class="game-subtitle">Fullfør tjenester for å bygge kroppsdeler og skape ditt perfekte hjelpemenneske!</p>
+                                </div>
+
+                                <div class="human-builder">
+                                    <div class="human-figure" id="humanFigure">
+                                        <!-- Hode -->
+                                        <div class="body-part head" id="part-head" data-part="head">
+                                            <div class="part-content">
+                                                <span class="part-emoji">🤔</span>
+                                                <span class="part-status">Låst</span>
+                                            </div>
+                                            <div class="part-tooltip">
+                                                <strong>Hode</strong><br>
+                                                Tenker og planlegger hjelp<br>
+                                                <em>Krever 1 tjeneste</em>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Torso -->
+                                        <div class="body-part torso" id="part-torso" data-part="torso">
+                                            <div class="part-content">
+                                                <span class="part-emoji">❤️</span>
+                                                <span class="part-status">Låst</span>
+                                            </div>
+                                            <div class="part-tooltip">
+                                                <strong>Hjerte/Torso</strong><br>
+                                                Omsorg og varme<br>
+                                                <em>Krever 2 tjenester</em>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Armer -->
+                                        <div class="body-part arm left" id="part-arm-left" data-part="arm-left">
+                                            <div class="part-content">
+                                                <span class="part-emoji">💪</span>
+                                                <span class="part-status">Låst</span>
+                                            </div>
+                                            <div class="part-tooltip">
+                                                <strong>Venstre Arm</strong><br>
+                                                Rekker ut for å hjelpe<br>
+                                                <em>Krever 3 tjenester</em>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="body-part arm right" id="part-arm-right" data-part="arm-right">
+                                            <div class="part-content">
+                                                <span class="part-emoji">💪</span>
+                                                <span class="part-status">Låst</span>
+                                            </div>
+                                            <div class="part-tooltip">
+                                                <strong>Høyre Arm</strong><br>
+                                                Rekker ut for å hjelpe<br>
+                                                <em>Krever 3 tjenester</em>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Ben -->
+                                        <div class="body-part leg left" id="part-leg-left" data-part="leg-left">
+                                            <div class="part-content">
+                                                <span class="part-emoji">🦵</span>
+                                                <span class="part-status">Låst</span>
+                                            </div>
+                                            <div class="part-tooltip">
+                                                <strong>Venstre Ben</strong><br>
+                                                Går dit hjelp trengs<br>
+                                                <em>Krever 4 tjenester</em>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="body-part leg right" id="part-leg-right" data-part="leg-right">
+                                            <div class="part-content">
+                                                <span class="part-emoji">🦵</span>
+                                                <span class="part-status">Låst</span>
+                                            </div>
+                                            <div class="part-tooltip">
+                                                <strong>Høyre Ben</strong><br>
+                                                Går dit hjelp trengs<br>
+                                                <em>Krever 4 tjenester</em>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Føtter -->
+                                        <div class="body-part foot left" id="part-foot-left" data-part="foot-left">
+                                            <div class="part-content">
+                                                <span class="part-emoji">🦶</span>
+                                                <span class="part-status">Låst</span>
+                                            </div>
+                                            <div class="part-tooltip">
+                                                <strong>Venstre Fot</strong><br>
+                                                Står stabilt sammen<br>
+                                                <em>Krever 5 tjenester</em>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="body-part foot right" id="part-foot-right" data-part="foot-right">
+                                            <div class="part-content">
+                                                <span class="part-emoji">🦶</span>
+                                                <span class="part-status">Låst</span>
+                                            </div>
+                                            <div class="part-tooltip">
+                                                <strong>Høyre Fot</strong><br>
+                                                Står stabilt sammen<br>
+                                                <em>Krever 5 tjenester</em>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="progress-ring-container">
+                                        <svg class="progress-ring" width="200" height="200">
+                                            <circle class="progress-ring-circle-bg" cx="100" cy="100" r="90"></circle>
+                                            <circle class="progress-ring-circle" id="progressCircle" cx="100" cy="100" r="90"></circle>
+                                        </svg>
+                                        <div class="progress-text">
+                                            <span id="progressPercent">0%</span>
+                                            <small>Fullført</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="game-controls">
+                                    <div class="service-counter">
+                                        <div class="counter-item">
+                                            <span class="counter-number" id="servicesCount">0</span>
+                                            <span class="counter-label">Tjenester fullført</span>
+                                        </div>
+                                        <div class="counter-item">
+                                            <span class="counter-number" id="partsUnlocked">0/8</span>
+                                            <span class="counter-label">Kroppsdeler låst opp</span>
+                                        </div>
+                                    </div>
+
+                                    <button class="btn btn-primary btn-glow" onclick="openOfferModal()">
+                                        <span>✨</span> Tilby en tjeneste
+                                    </button>
+                                </div>
+
+                                <div class="achievement-banner" id="achievementBanner" style="display: none;">
+                                    <div class="achievement-content">
+                                        <span class="achievement-emoji">🎉</span>
+                                        <div class="achievement-text">
+                                            <strong>Gratulerer!</strong>
+                                            <span id="achievementText">Du har bygget et komplett hjelpemenneske!</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Offer Modal -->
+                        <div id="offerModal" class="modal hidden">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h3>Tilby en tjeneste</h3>
+                                    <button class="modal-close" onclick="closeOfferModal()">×</button>
+                                </div>
+                                <form class="offer-form" onsubmit="handleOfferSubmit(event)">
+                                    <div class="form-group">
+                                        <label>Hva kan du hjelpe med?</label>
+                                        <input type="text" id="offerTitle" placeholder="f.eks. Hagearbeid, Mattehjelp, Gitarundervisning..." required>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Beskriv hjelpen din</label>
+                                        <textarea id="offerDesc" placeholder="Fortell mer om hva du kan hjelpe med..." required></textarea>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Dine ferdigheter (trykk Enter for å legge til)</label>
+                                        <div class="skills-input" id="skillsContainer" onclick="document.getElementById('skillInput').focus()">
+                                            <input type="text" id="skillInput" placeholder="f.eks. Hage, Matematikk, Musikk..." onkeydown="handleSkillInput(event)">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Hvor kan du hjelpe?</label>
+                                        <input type="text" id="offerLocation" placeholder="f.eks. Oslo, Bergen, Trondheim...">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="confirmHelp" required>
+                                            <span>Jeg bekrefter at jeg vil hjelpe noen i fellesskapets ånd</span>
+                                        </label>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                                        <span>🚀</span> Fullfør og få kroppsdel!
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Categories Tab -->
+                        <div id="dash-content-categories" class="content-section">
+                            <div class="categories-container">
+                                <div class="categories-header">
+                                    <h2>Velg en kategori:</h2>
+                                    <p class="categories-subtitle">— Klikk for å se tilgjengelige tjenester —</p>
+                                </div>
+                                
+                                <div class="categories-grid" id="categoriesGrid">
+                                    <button class="category-btn" onclick="selectCategory('akademisk')">
+                                        <span class="category-icon">📚</span>
+                                        Akademisk støtte
+                                    </button>
+                                    <button class="category-btn" onclick="selectCategory('markedsforing')">
+                                        <span class="category-icon">🎨</span>
+                                        Markedsføring og design
+                                    </button>
+                                    <button class="category-btn" onclick="selectCategory('okonomi')">
+                                        <span class="category-icon">💰</span>
+                                        Økonomi og regnskap
+                                    </button>
+                                    <button class="category-btn" onclick="selectCategory('praktiske')">
+                                        <span class="category-icon">🔧</span>
+                                        Praktiske tjenester
+                                    </button>
+                                    <button class="category-btn" onclick="selectCategory('teknisk')">
+                                        <span class="category-icon">💻</span>
+                                        Teknisk bistand
+                                    </button>
+                                    <button class="category-btn" onclick="selectCategory('hage')">
+                                        <span class="category-icon">🌱</span>
+                                        Hagearbeid og montering
+                                    </button>
+                                    <button class="category-btn category-btn-full" onclick="selectCategory('nettverk')">
+                                        <span class="category-icon">🤝</span>
+                                        Nettverksbygging
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Selected Category View -->
+                            <div id="categoryView" class="category-view hidden">
+                                <div class="category-view-header">
+                                    <button class="btn btn-secondary" onclick="backToCategories()" style="width: auto; padding: 0.8rem 1.5rem;">
+                                        ← Tilbake til kategorier
+                                    </button>
+                                    <h3 id="selectedCategoryTitle">Kategori</h3>
+                                </div>
+                                <div class="category-content" id="categoryContent">
+                                    <!-- Dynamic content will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- History Tab -->
+                        <div id="dash-content-history" class="content-section">
+                            <div class="history-container">
+                                <h2 class="history-title">Din historikk</h2>
+                                
+                                <div class="history-section">
+                                    <h3 class="history-subtitle">Siste aktivitet</h3>
+                                    <div class="history-list" id="historyList">
+                                        <div class="history-item">
+                                            <div class="history-info">
+                                                <h4>Ingen aktivitet ennå</h4>
+                                                <p>Start med å tilby eller motta en tjeneste!</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="stats-grid history-stats">
+                                    <div class="stat-card" style="background: rgba(76, 175, 80, 0.1);">
+                                        <div class="stat-number" style="color: #4CAF50;" id="historyGiven">0</div>
+                                        <div class="stat-label">Totalt gitt</div>
+                                    </div>
+                                    <div class="stat-card" style="background: rgba(33, 150, 243, 0.1);">
+                                        <div class="stat-number" style="color: #2196F3;" id="historyReceived">0</div>
+                                        <div class="stat-label">Totalt mottatt</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>'''
+
+
+
+
+
+
+
