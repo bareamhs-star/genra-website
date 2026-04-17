@@ -1,4 +1,4 @@
-// GENRA - Hovedscript
+// GENRA - Hovedscript med salt-basert sikkerhet og sosial innlogging
 // ========================================
 
 // State
@@ -33,9 +33,106 @@ const bodyParts = {
 
 const totalParts = Object.keys(bodyParts).length;
 
-// Initialize
+// ========================================
+// SIKKER PASSORD-HÅNDTERING MED SALT
+// ========================================
+
+// Generer tilfeldig salt (16 bytes = 32 hex tegn)
+function generateSalt() {
+    const array = new Uint8Array(16);
+    crypto.getRandomValues(array);
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+// Hash passord med salt (PBKDF2-lignende iterasjon)
+async function hashPasswordWithSalt(password, salt) {
+    const encoder = new TextEncoder();
+    let data = encoder.encode(password + salt);
+
+    // Iterer 1000 ganger for å gjøre brute-force vanskeligere
+    for (let i = 0; i < 1000; i++) {
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        data = new Uint8Array(hashBuffer);
+    }
+
+    const finalHash = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(finalHash));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Verifiser passord
+async function verifyPassword(password, salt, storedHash) {
+    const computedHash = await hashPasswordWithSalt(password, salt);
+    return computedHash === storedHash;
+}
+
+// Valider passordstyrke
+function validatePassword(password) {
+    const minLength = 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumbers = /\d/.test(password);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    const errors = [];
+    if (password.length < minLength) errors.push('Minst 8 tegn');
+    if (!hasUpperCase) errors.push('Minst én stor bokstav');
+    if (!hasLowerCase) errors.push('Minst én liten bokstav');
+    if (!hasNumbers) errors.push('Minst ett tall');
+
+    return {
+        isValid: errors.length === 0,
+        errors: errors,
+        strength: password.length >= 8 && hasUpperCase && hasLowerCase && hasNumbers && hasSpecial ? 'strong' : 
+                  password.length >= 8 && hasUpperCase && hasLowerCase && hasNumbers ? 'medium' : 'weak'
+    };
+}
+
+// Vis passordstyrke
+function updatePasswordStrength(password) {
+    const strengthDiv = document.getElementById('passwordStrength');
+    if (!strengthDiv) return;
+
+    const validation = validatePassword(password);
+
+    if (password.length === 0) {
+        strengthDiv.innerHTML = '';
+        return;
+    }
+
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/\d/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+    const colors = ['#ff4444', '#ff8844', '#ffaa44', '#88cc44', '#44aa44'];
+    const labels = ['Svakt', 'Svakt', 'OK', 'Bra', 'Sterkt'];
+
+    strengthDiv.innerHTML = `
+        <div style="display: flex; gap: 4px; margin-top: 8px;">
+            ${[0,1,2,3,4].map(i => `
+                <div style="flex: 1; height: 4px; background: ${i < strength ? colors[strength-1] : '#e0e0e0'}; border-radius: 2px; transition: all 0.3s;"></div>
+            `).join('')}
+        </div>
+        <small style="color: ${colors[strength-1] || '#666'}; margin-top: 4px; display: block;">${labels[strength-1] || ''}</small>
+    `;
+}
+
+// Toggle passord synlighet
+function togglePasswordVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    const type = input.type === 'password' ? 'text' : 'password';
+    input.type = type;
+}
+
+// ========================================
+// INITIALISERING
+// ========================================
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Check for saved user
+    // Sjekk for innlogget bruker
     const saved = localStorage.getItem('genraUser');
     if (saved) {
         currentUser = JSON.parse(saved);
@@ -43,19 +140,19 @@ document.addEventListener('DOMContentLoaded', () => {
         updateNavUser();
     }
 
-    // Load stats
+    // Last stats
     const savedStats = localStorage.getItem('genraStats');
     if (savedStats) {
         userStats = JSON.parse(savedStats);
     }
 
-    // Load history
+    // Last historikk
     const savedHistory = localStorage.getItem('genraHistory');
     if (savedHistory) {
         userHistory = JSON.parse(savedHistory);
     }
 
-    // Navbar scroll effect
+    // Navbar scroll effekt
     window.addEventListener('scroll', () => {
         const nav = document.getElementById('navbar');
         if (window.scrollY > 50) {
@@ -65,29 +162,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Initialize game if on dashboard
-    if (document.getElementById('humanFigure')) {
-        updateHumanBuilder();
+    // Passordstyrke monitorering
+    const regPassword = document.getElementById('regPassword');
+    if (regPassword) {
+        regPassword.addEventListener('input', (e) => {
+            updatePasswordStrength(e.target.value);
+        });
     }
+
+    // Initialiser kategorigrid
+    renderCategoriesGrid();
+
+    // Initialiser Google Sign-In
+    initGoogleSignIn();
 });
 
 // ========================================
-// NAVIGATION
+// NAVIGASJON
 // ========================================
 
 function showSection(sectionId) {
-    // Hide all sections
     document.getElementById('landing').classList.add('hidden');
     document.getElementById('auth').classList.add('hidden');
     document.getElementById('dashboard').classList.add('hidden');
-    
-    // Show requested section
+
     document.getElementById(sectionId).classList.remove('hidden');
-    
-    // Scroll to top
+
     window.scrollTo(0, 0);
-    
-    // Update nav
+
     if (sectionId === 'dashboard' && currentUser) {
         updateDashboard();
     }
@@ -121,102 +223,287 @@ function showAuthTab(tab) {
         loginForm.classList.add('active');
         registerForm.classList.remove('active');
     }
-    
+
     showSection('auth');
 }
 
-function setAuthMethod(method) {
-    const buttons = document.querySelectorAll('.auth-method');
-    buttons.forEach(btn => btn.classList.remove('active'));
-    event.target.classList.add('active');
-
-    const emailFields = document.getElementById('emailFields');
-    const phoneFields = document.getElementById('phoneFields');
-
-    if (method === 'email') {
-        emailFields.style.display = 'block';
-        phoneFields.style.display = 'none';
-        document.getElementById('regEmail').required = true;
-        document.getElementById('regPhone').required = false;
-    } else {
-        emailFields.style.display = 'none';
-        phoneFields.style.display = 'block';
-        document.getElementById('regEmail').required = false;
-        document.getElementById('regPhone').required = true;
-    }
-}
-
 // ========================================
-// AUTH HANDLERS
+// SIKKER AUTH HANDLERS MED SALT
 // ========================================
 
-function handleRegister(e) {
+async function handleRegister(e) {
     e.preventDefault();
-    
-    const username = document.getElementById('regUsername').value;
+
+    const username = document.getElementById('regUsername').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
     const password = document.getElementById('regPassword').value;
     const confirm = document.getElementById('regPasswordConfirm').value;
-    const email = document.getElementById('regEmail').value;
-    const phone = document.getElementById('regPhone').value;
+    const acceptTerms = document.getElementById('acceptTerms').checked;
+
+    // Valideringer
+    if (!acceptTerms) {
+        showToast('❌ Du må godta vilkårene');
+        return;
+    }
 
     if (password !== confirm) {
         showToast('❌ Passordene matcher ikke');
         return;
     }
 
-    if (password.length < 6) {
-        showToast('❌ Passordet må være minst 6 tegn');
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+        showToast('❌ ' + passwordValidation.errors.join(', '));
         return;
     }
 
-    // Simulate registration
-    currentUser = {
+    // Sjekk om brukernavn eller e-post allerede eksisterer
+    const existingUsers = JSON.parse(localStorage.getItem('genraUsers') || '[]');
+    if (existingUsers.find(u => u.username === username)) {
+        showToast('❌ Brukernavnet er allerede tatt');
+        return;
+    }
+    if (existingUsers.find(u => u.email === email)) {
+        showToast('❌ E-posten er allerede registrert');
+        return;
+    }
+
+    // Generer salt og hash passord
+    const salt = generateSalt();
+    const hashedPassword = await hashPasswordWithSalt(password, salt);
+
+    // Opprett bruker
+    const newUser = {
         username,
-        email: email || phone,
-        id: Date.now(),
+        email,
+        passwordHash: hashedPassword,
+        salt: salt,  // VIKTIG: Lagre saltet!
+        id: Date.now().toString(),
         skills: [],
         categories: [],
         unlockedParts: [],
-        totalServices: 0
+        totalServices: 0,
+        createdAt: new Date().toISOString()
     };
+
+    // Lagre i users database
+    existingUsers.push(newUser);
+    localStorage.setItem('genraUsers', JSON.stringify(existingUsers));
+
+    // Sett som current user (uten passord og salt)
+    currentUser = { ...newUser };
+    delete currentUser.passwordHash;
+    delete currentUser.salt;
+    selectedCategories = [];
 
     saveUser();
     showToast('🎉 Konto opprettet! Velkommen til Genra!');
+
     setTimeout(() => {
         showSection('dashboard');
     }, 1000);
 }
 
-function handleLogin(e) {
+async function handleLogin(e) {
     e.preventDefault();
-    
-    const identifier = document.getElementById('loginIdentifier').value;
-    
-    // Simulate login
-    currentUser = {
-        username: identifier.split('@')[0],
-        email: identifier,
-        id: Date.now(),
-        skills: [],
-        categories: [],
-        unlockedParts: [],
-        totalServices: 0
-    };
+
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+
+    // Hent brukere
+    const existingUsers = JSON.parse(localStorage.getItem('genraUsers') || '[]');
+    const user = existingUsers.find(u => u.email === email);
+
+    if (!user) {
+        showToast('❌ Feil e-post eller passord');
+        return;
+    }
+
+    // Verifiser passord med salt
+    const isValid = await verifyPassword(password, user.salt, user.passwordHash);
+    if (!isValid) {
+        showToast('❌ Feil e-post eller passord');
+        return;
+    }
+
+    // Sett som current user (uten passord og salt)
+    currentUser = { ...user };
+    delete currentUser.passwordHash;
+    delete currentUser.salt;
+    selectedCategories = currentUser.categories || [];
 
     saveUser();
-    showToast('👋 Velkommen tilbake!');
+    showToast('👋 Velkommen tilbake, ' + currentUser.username + '!');
+
     setTimeout(() => {
         showSection('dashboard');
     }, 500);
 }
 
+// ========================================
+// GOOGLE INNLOGGING
+// ========================================
+
+function initGoogleSignIn() {
+    // Sjekk om Google API er lastet
+    if (typeof google !== 'undefined' && google.accounts) {
+        google.accounts.id.initialize({
+            client_id: 'DIN_GOOGLE_CLIENT_ID.apps.googleusercontent.com', // BYTT UT MED DIN
+            callback: handleGoogleCredentialResponse,
+            auto_select: false,
+            cancel_on_tap_outside: true
+        });
+
+        // Render Google-knappen hvis den finnes
+        const googleBtn = document.getElementById('googleSignInBtn');
+        if (googleBtn) {
+            google.accounts.id.renderButton(googleBtn, {
+                theme: 'outline',
+                size: 'large',
+                width: '100%'
+            });
+        }
+    }
+}
+
+function handleGoogleCredentialResponse(response) {
+    // Dekoder JWT-token fra Google
+    const credential = response.credential;
+    const payload = JSON.parse(atob(credential.split('.')[1]));
+
+    handleSocialLogin('google', {
+        email: payload.email,
+        name: payload.name,
+        picture: payload.picture,
+        sub: payload.sub  // Googles unike ID for brukeren
+    });
+}
+
+function signInWithGoogle() {
+    if (typeof google !== 'undefined' && google.accounts) {
+        google.accounts.id.prompt(); // Vis One Tap-dialog
+    } else {
+        showToast('⏳ Laster Google-innlogging... Prøv igjen om et sekund.');
+        // Fallback: Last Google API på nytt
+        setTimeout(initGoogleSignIn, 1000);
+    }
+}
+
+// ========================================
+// LINKEDIN INNLOGGING
+// ========================================
+
+function signInWithLinkedIn() {
+    // LinkedIn OAuth 2.0 parametere
+    const clientId = 'DIN_LINKEDIN_CLIENT_ID'; // BYTT UT MED DIN
+    const redirectUri = encodeURIComponent(window.location.origin + '/auth/linkedin/callback');
+    const state = generateSalt(); // CSRF-beskyttelse
+    const scope = 'openid profile email';
+
+    // Lagre state for verifisering
+    sessionStorage.setItem('linkedinState', state);
+
+    // Bygg auth URL
+    const authUrl = `https://www.linkedin.com/oauth/v2/authorization?` +
+        `response_type=code&` +
+        `client_id=${clientId}&` +
+        `redirect_uri=${redirectUri}&` +
+        `state=${state}&` +
+        `scope=${encodeURIComponent(scope)}`;
+
+    // Omdiriger til LinkedIn
+    window.location.href = authUrl;
+}
+
+// Håndter LinkedIn callback (kall denne når brukeren kommer tilbake)
+async function handleLinkedInCallback() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    const error = urlParams.get('error');
+
+    if (error) {
+        showToast('❌ LinkedIn-innlogging avbrutt');
+        return;
+    }
+
+    if (state !== sessionStorage.getItem('linkedinState')) {
+        showToast('❌ Sikkerhetsfeil: Ugyldig state');
+        return;
+    }
+
+    // Bytte auth code for access token (dette må gjøres server-side i produksjon!)
+    showToast('✅ LinkedIn-kode mottatt. Fullfører innlogging...');
+
+    // I produksjon: Send code til backend som bytter det for token
+    // For demo: Simuler vellykket innlogging
+    handleSocialLogin('linkedin', {
+        email: 'bruker@linkedin.com', // Dette ville komme fra LinkedIn API
+        name: 'LinkedIn Bruker',
+        sub: 'linkedin_' + Date.now()
+    });
+}
+
+// ========================================
+// FELLES SOSIAL INNLOGGING HÅNDTERING
+// ========================================
+
+async function handleSocialLogin(provider, userData) {
+    const existingUsers = JSON.parse(localStorage.getItem('genraUsers') || '[]');
+
+    // Sjekk om bruker eksisterer (basert på e-post)
+    let user = existingUsers.find(u => u.email === userData.email);
+
+    if (!user) {
+        // Opprett ny bruker fra sosial data
+        user = {
+            username: userData.name || userData.email.split('@')[0],
+            email: userData.email,
+            id: Date.now().toString(),
+            provider: provider,
+            providerId: userData.sub,
+            profilePicture: userData.picture || null,
+            skills: [],
+            categories: [],
+            unlockedParts: [],
+            totalServices: 0,
+            createdAt: new Date().toISOString(),
+            isSocialLogin: true
+        };
+        existingUsers.push(user);
+        localStorage.setItem('genraUsers', JSON.stringify(existingUsers));
+        showToast(`🎉 Ny konto opprettet via ${provider}!`);
+    } else {
+        // Oppdater eksisterende bruker med sosial info
+        if (!user.provider) {
+            user.provider = provider;
+            user.providerId = userData.sub;
+        }
+        showToast(`👋 Velkommen tilbake via ${provider}!`);
+    }
+
+    currentUser = { ...user };
+    delete currentUser.passwordHash;
+    delete currentUser.salt;
+    selectedCategories = currentUser.categories || [];
+
+    saveUser();
+    showSection('dashboard');
+}
+
+// ========================================
+// UTLOGGING
+// ========================================
+
 function logout() {
+    // Hvis Google-innlogging, logg ut fra Google også
+    if (currentUser?.provider === 'google' && typeof google !== 'undefined') {
+        google.accounts.id.disableAutoSelect();
+    }
+
     currentUser = null;
     selectedCategories = [];
     localStorage.removeItem('genraUser');
-    localStorage.removeItem('genraStats');
-    localStorage.removeItem('genraHistory');
-    localStorage.removeItem('genraUnlockedParts');
     document.getElementById('navUser').classList.remove('visible');
     showSection('landing');
     showToast('👋 Du er nå logget ut');
@@ -225,8 +512,16 @@ function logout() {
 function saveUser() {
     if (currentUser) {
         currentUser.categories = selectedCategories;
+        localStorage.setItem('genraUser', JSON.stringify(currentUser));
+
+        // Oppdater også i users database
+        const existingUsers = JSON.parse(localStorage.getItem('genraUsers') || '[]');
+        const index = existingUsers.findIndex(u => u.id === currentUser.id);
+        if (index !== -1) {
+            existingUsers[index] = { ...existingUsers[index], ...currentUser };
+            localStorage.setItem('genraUsers', JSON.stringify(existingUsers));
+        }
     }
-    localStorage.setItem('genraUser', JSON.stringify(currentUser));
     updateNavUser();
 }
 
@@ -234,7 +529,14 @@ function updateNavUser() {
     if (currentUser) {
         document.getElementById('navUser').classList.add('visible');
         document.getElementById('userNameDisplay').textContent = currentUser.username;
-        document.getElementById('userAvatar').textContent = currentUser.username[0].toUpperCase();
+
+        // Vis profilbilde hvis tilgjengelig (fra sosial innlogging)
+        const avatar = document.getElementById('userAvatar');
+        if (currentUser.profilePicture) {
+            avatar.innerHTML = `<img src="${currentUser.profilePicture}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+        } else {
+            avatar.textContent = currentUser.username[0].toUpperCase();
+        }
     }
 }
 
@@ -243,26 +545,30 @@ function updateNavUser() {
 // ========================================
 
 function showDashboardTab(tab) {
-    // Update sidebar
     document.querySelectorAll('.sidebar-item').forEach(item => {
         item.classList.remove('active');
     });
     document.getElementById(`dash-tab-${tab}`).classList.add('active');
 
-    // Update content
     document.querySelectorAll('.content-section').forEach(section => {
         section.classList.remove('active');
     });
     document.getElementById(`dash-content-${tab}`).classList.add('active');
-    
-    // Update game if build tab
+
     if (tab === 'build') {
         updateHumanBuilder();
     }
-    
-    // Update profile categories if profile tab
+
     if (tab === 'profile') {
         updateProfileCategories();
+    }
+
+    if (tab === 'categories') {
+        renderCategoriesGrid();
+    }
+
+    if (tab === 'chat') {
+        initChat();
     }
 }
 
@@ -272,94 +578,217 @@ function updateDashboard() {
     document.getElementById('dashboardUserName').textContent = currentUser.username;
     document.getElementById('profileName').textContent = currentUser.username;
     document.getElementById('profileEmail').textContent = currentUser.email;
-    document.getElementById('profileAvatar').textContent = currentUser.username[0].toUpperCase();
 
-    // Update stats
+    // Oppdater avatar
+    const avatar = document.getElementById('profileAvatar');
+    if (currentUser.profilePicture) {
+        avatar.innerHTML = `<img src="${currentUser.profilePicture}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+    } else {
+        avatar.textContent = currentUser.username[0].toUpperCase();
+    }
+
     document.getElementById('statGiven').textContent = userStats.given;
     document.getElementById('statReceived').textContent = userStats.received;
     document.getElementById('statBalance').textContent = userStats.given - userStats.received;
     document.getElementById('historyGiven').textContent = userStats.given;
     document.getElementById('historyReceived').textContent = userStats.received;
 
-    // Update history
     renderHistory();
-
-    // Update skills
-    if (currentUser.skills && currentUser.skills.length > 0) {
-        renderProfileSkills();
-    }
-
-    // Update profile categories
     updateProfileCategories();
-
-    // Update game
     updateHumanBuilder();
 }
 
 // ========================================
-// PROFILE CATEGORIES
+// KATEGORIER
 // ========================================
 
-function updateProfileCategories() {
-    const buttons = document.querySelectorAll('.profile-categories .category-btn-small');
-    buttons.forEach(btn => {
-        const category = btn.dataset.category;
-        if (selectedCategories.includes(category)) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
+function renderCategoriesGrid() {
+    const grid = document.getElementById('categoriesGrid');
+    if (!grid) return;
+
+    grid.innerHTML = '';
+
+    Object.keys(categories).forEach(key => {
+        const category = categories[key];
+        const isSelected = selectedCategories.includes(key);
+
+        const btn = document.createElement('div');
+        btn.className = `category-card ${isSelected ? 'selected' : ''}`;
+        btn.innerHTML = `
+            <div class="category-card-icon">${category.icon}</div>
+            <h3 class="category-card-title">${category.name}</h3>
+            <p class="category-card-desc">${category.description}</p>
+            <button class="btn ${isSelected ? 'btn-secondary' : 'btn-primary'} category-add-btn" onclick="toggleCategory('${key}')">
+                ${isSelected ? '✓ Lagt til' : '+ Legg til'}
+            </button>
+        `;
+        grid.appendChild(btn);
     });
 }
 
-function toggleProfileCategory(category) {
-    const index = selectedCategories.indexOf(category);
+function toggleCategory(categoryKey) {
+    const index = selectedCategories.indexOf(categoryKey);
+
     if (index > -1) {
         selectedCategories.splice(index, 1);
-        showToast(`❌ Fjernet ${categories[category].name}`);
+        showToast(`❌ Fjernet ${categories[categoryKey].name}`);
     } else {
-        selectedCategories.push(category);
-        showToast(`✅ La til ${categories[category].name}`);
+        selectedCategories.push(categoryKey);
+        showToast(`✅ La til ${categories[categoryKey].name}`);
     }
-    
+
     saveUser();
+    renderCategoriesGrid();
     updateProfileCategories();
 }
 
-// ========================================
-// CATEGORIES TAB
-// ========================================
+function updateProfileCategories() {
+    const container = document.getElementById('profileCategories');
+    const noMsg = document.getElementById('noCategoriesMsg');
 
-function selectCategory(categoryKey) {
-    const category = categories[categoryKey];
-    if (!category) return;
-    
-    document.getElementById('categoriesGrid').parentElement.classList.add('hidden');
-    document.getElementById('categoryView').classList.remove('hidden');
-    document.getElementById('selectedCategoryTitle').textContent = category.name;
-    
-    const content = document.getElementById('categoryContent');
-    content.innerHTML = `
-        <div class="category-info">
-            <div class="category-hero">
-                <span class="category-hero-icon">${category.icon}</span>
-                <h4>${category.name}</h4>
-                <p>${category.description}</p>
-            </div>
-            <div class="category-services">
-                <h5>Tilgjengelige tjenester i denne kategorien:</h5>
-                <div class="services-placeholder">
-                    <p>🚧 Denne funksjonen kommer snart!</p>
-                    <p>Her vil du kunne se og søke etter tjenester innen ${category.name.toLowerCase()}.</p>
-                </div>
-            </div>
-        </div>
-    `;
+    if (!container) return;
+
+    container.querySelectorAll('.category-btn-small').forEach(btn => btn.remove());
+
+    if (selectedCategories.length === 0) {
+        if (noMsg) noMsg.style.display = 'block';
+    } else {
+        if (noMsg) noMsg.style.display = 'none';
+
+        selectedCategories.forEach(categoryKey => {
+            const category = categories[categoryKey];
+            if (!category) return;
+
+            const btn = document.createElement('button');
+            btn.className = 'category-btn-small active';
+            btn.innerHTML = `
+                <span class="category-icon">${category.icon}</span>
+                <span>${category.name}</span>
+            `;
+            btn.onclick = () => showDashboardTab('categories');
+            container.appendChild(btn);
+        });
+    }
 }
 
-function backToCategories() {
-    document.getElementById('categoryView').classList.add('hidden');
-    document.getElementById('categoriesGrid').parentElement.classList.remove('hidden');
+// ========================================
+// CHAT FUNKSJONALITET
+// ========================================
+
+let chatMessages = [];
+let activeChat = null;
+
+function initChat() {
+    renderChatList();
+    renderChatMessages();
+}
+
+function renderChatList() {
+    const chatList = document.getElementById('chatList');
+    if (!chatList) return;
+
+    // Demo: Vis noen samtaler
+    const conversations = [
+        { id: 1, name: 'Ola Nordmann', lastMessage: 'Hei! Kan du hjelpe meg med hagearbeid?', time: '14:30', unread: 2 },
+        { id: 2, name: 'Kari Hansen', lastMessage: 'Takk for hjelpen!', time: 'I går', unread: 0 },
+        { id: 3, name: 'Per Olsen', lastMessage: 'Når passer det for deg?', time: 'I går', unread: 1 }
+    ];
+
+    chatList.innerHTML = conversations.map(conv => `
+        <div class="chat-item ${activeChat === conv.id ? 'active' : ''}" onclick="openChat(${conv.id}, '${conv.name}')">
+            <div class="chat-avatar">${conv.name[0]}</div>
+            <div class="chat-info">
+                <h4>${conv.name}</h4>
+                <p>${conv.lastMessage}</p>
+            </div>
+            <div class="chat-meta">
+                <span class="chat-time">${conv.time}</span>
+                ${conv.unread > 0 ? `<span class="chat-badge">${conv.unread}</span>` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+function openChat(id, name) {
+    activeChat = id;
+    renderChatList();
+
+    const header = document.getElementById('chatHeader');
+    if (header) {
+        header.innerHTML = `
+            <div class="chat-avatar-large">${name[0]}</div>
+            <div>
+                <h3>${name}</h3>
+                <span class="chat-status">● Pålogget</span>
+            </div>
+        `;
+    }
+
+    // Last meldinger for denne chatten
+    chatMessages = [
+        { id: 1, sender: 'them', text: 'Hei! Jeg så at du tilbyr hagearbeid?', time: '14:25' },
+        { id: 2, sender: 'me', text: 'Ja, det stemmer! Hva trenger du hjelp med?', time: '14:28' },
+        { id: 3, sender: 'them', text: 'Kan du hjelpe meg med hagearbeid?', time: '14:30' }
+    ];
+
+    renderChatMessages();
+}
+
+function renderChatMessages() {
+    const container = document.getElementById('chatMessages');
+    if (!container) return;
+
+    if (!activeChat) {
+        container.innerHTML = `
+            <div class="chat-empty">
+                <span style="font-size: 3rem;">💬</span>
+                <p>Velg en samtale for å starte chatting</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = chatMessages.map(msg => `
+        <div class="chat-message ${msg.sender}">
+            <div class="message-bubble">
+                <p>${msg.text}</p>
+                <span class="message-time">${msg.time}</span>
+            </div>
+        </div>
+    `).join('');
+
+    // Scroll til bunn
+    container.scrollTop = container.scrollHeight;
+}
+
+function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+
+    if (!text || !activeChat) return;
+
+    const newMessage = {
+        id: Date.now(),
+        sender: 'me',
+        text: text,
+        time: new Date().toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    chatMessages.push(newMessage);
+    renderChatMessages();
+    input.value = '';
+
+    // Simuler svar (for demo)
+    setTimeout(() => {
+        const reply = {
+            id: Date.now() + 1,
+            sender: 'them',
+            text: 'Takk for meldingen! Jeg svarer så snart jeg kan.',
+            time: new Date().toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })
+        };
+        chatMessages.push(reply);
+        renderChatMessages();
+    }, 2000);
 }
 
 // ========================================
@@ -369,53 +798,47 @@ function backToCategories() {
 function updateHumanBuilder() {
     const servicesCount = userStats.given;
     const unlockedParts = currentUser?.unlockedParts || [];
-    
-    // Update counters
+
     document.getElementById('servicesCount').textContent = servicesCount;
     document.getElementById('partsUnlocked').textContent = `${unlockedParts.length}/${totalParts}`;
-    
-    // Update progress ring
+
     const progressPercent = Math.min((servicesCount / 5) * 100, 100);
     const circle = document.getElementById('progressCircle');
     const circumference = 2 * Math.PI * 90;
     const offset = circumference - (progressPercent / 100) * circumference;
-    circle.style.strokeDashoffset = offset;
+    if (circle) {
+        circle.style.strokeDashoffset = offset;
+    }
     document.getElementById('progressPercent').textContent = `${Math.round(progressPercent)}%`;
-    
-    // Update body parts
+
     Object.keys(bodyParts).forEach(partId => {
         const part = bodyParts[partId];
         const element = document.getElementById(`part-${partId}`);
-        
+
         if (element) {
             const isUnlocked = servicesCount >= part.required;
-            
+
             if (isUnlocked && !element.classList.contains('unlocked')) {
                 element.classList.add('unlocked');
-                
-                // Update content
+
                 const content = element.querySelector('.part-content');
                 content.innerHTML = `
                     <span class="part-emoji">${part.emoji}</span>
                     <span class="part-status">Låst</span>
                 `;
-                
-                // Add to unlocked parts if not already
+
                 if (!unlockedParts.includes(partId)) {
                     unlockedParts.push(partId);
                     if (currentUser) {
                         currentUser.unlockedParts = unlockedParts;
                         saveUser();
                     }
-                    
-                    // Show unlock animation
                     showToast(`🔓 ${part.name} låst opp!`);
                 }
             }
         }
     });
-    
-    // Check for completion
+
     if (unlockedParts.length === totalParts && servicesCount >= 5) {
         const banner = document.getElementById('achievementBanner');
         if (banner) {
@@ -437,7 +860,6 @@ function closeOfferModal() {
     document.body.style.overflow = '';
 }
 
-// Close modal on outside click
 document.addEventListener('click', (e) => {
     const modal = document.getElementById('offerModal');
     if (modal && !modal.classList.contains('hidden')) {
@@ -466,10 +888,9 @@ function handleSkillInput(e) {
 function renderSkills() {
     const container = document.getElementById('skillsContainer');
     const input = document.getElementById('skillInput');
-    
-    // Clear existing tags
+
     container.querySelectorAll('.skill-tag').forEach(tag => tag.remove());
-    
+
     currentSkills.forEach((skill, index) => {
         const tag = document.createElement('div');
         tag.className = 'skill-tag';
@@ -488,8 +909,15 @@ function removeSkill(index) {
 
 function renderProfileSkills() {
     const container = document.getElementById('profileSkills');
+    if (!container || !currentUser?.skills) return;
+
     container.innerHTML = '';
-    
+
+    if (currentUser.skills.length === 0) {
+        container.innerHTML = '<p style="color: var(--text-secondary);">Du har ikke lagt til noen ferdigheter ennå.</p>';
+        return;
+    }
+
     currentUser.skills.forEach(skill => {
         const tag = document.createElement('div');
         tag.className = 'skill-tag';
@@ -506,20 +934,18 @@ function renderProfileSkills() {
 
 function handleOfferSubmit(e) {
     e.preventDefault();
-    
+
     const title = document.getElementById('offerTitle').value;
     const confirmHelp = document.getElementById('confirmHelp');
-    
+
     if (!confirmHelp.checked) {
         showToast('⚠️ Vennligst bekreft at du vil hjelpe');
         return;
     }
-    
-    // Save skills to user
+
     currentUser.skills = [...currentSkills];
     saveUser();
-    
-    // Add to history as "given"
+
     addToHistory({
         type: 'given',
         title: title,
@@ -527,28 +953,22 @@ function handleOfferSubmit(e) {
         description: document.getElementById('offerDesc').value
     });
 
-    // Update stats
     userStats.given++;
     localStorage.setItem('genraStats', JSON.stringify(userStats));
 
-    // Show success
     showToast('🎉 Tjeneste fullført! Du har låst opp en ny kroppsdel!');
-    
-    // Close modal
+
     closeOfferModal();
-    
-    // Reset form
+
     document.getElementById('offerTitle').value = '';
     document.getElementById('offerDesc').value = '';
     document.getElementById('offerLocation').value = '';
     document.getElementById('confirmHelp').checked = false;
     currentSkills = [];
     renderSkills();
-    
-    // Update game
+
     updateHumanBuilder();
-    
-    // Go to build tab to see the new part
+
     setTimeout(() => {
         showDashboardTab('build');
     }, 500);
@@ -566,7 +986,7 @@ function addToHistory(item) {
 
 function renderHistory() {
     const container = document.getElementById('historyList');
-    
+
     if (userHistory.length === 0) {
         container.innerHTML = `
             <div class="history-item">
@@ -607,44 +1027,32 @@ function handleContactSubmit(e) {
 }
 
 // ========================================
-// TOAST NOTIFICATIONS
+// HJELPEFUNKSJONER
 // ========================================
 
 function showToast(message) {
     const toast = document.getElementById('toast');
     toast.textContent = message;
     toast.classList.add('show');
-    
+
     setTimeout(() => {
         toast.classList.remove('show');
     }, 4000);
 }
 
-// ========================================
-// UTILITY FUNCTIONS
-// ========================================
-
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
+function showTerms() {
+    alert('Vilkår og betingelser kommer her...');
 }
 
-// Smooth scroll polyfill for older browsers
-if (!('scrollBehavior' in document.documentElement.style)) {
-    import('https://cdn.jsdelivr.net/npm/smoothscroll-polyfill@0.4.4/dist/smoothscroll.min.js')
-        .then(module => {
-            module.polyfill();
-        })
-        .catch(() => {
-            // Silent fail - fallback works fine
-        });
+function showPrivacy() {
+    alert('Personvernerklæring kommer her...');
+}
+
+function showForgotPassword() {
+    const email = prompt('Skriv inn din e-postadresse:');
+    if (email) {
+        showToast('📧 Hvis kontoen eksisterer, vil du motta en e-post for å tilbakestille passordet.');
+    }
 }
 
 // Keyboard accessibility
@@ -652,26 +1060,12 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         closeOfferModal();
     }
+
+    // Chat: Send på Enter (ikke Shift+Enter)
+    if (e.key === 'Enter' && !e.shiftKey && document.activeElement.id === 'chatInput') {
+        e.preventDefault();
+        sendMessage();
+    }
 });
 
-// Performance: Lazy load images
-if ('IntersectionObserver' in window) {
-    const imageObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const img = entry.target;
-                if (img.dataset.src) {
-                    img.src = img.dataset.src;
-                    img.removeAttribute('data-src');
-                    observer.unobserve(img);
-                }
-            }
-        });
-    });
-
-    document.querySelectorAll('img[data-src]').forEach(img => {
-        imageObserver.observe(img);
-    });
-}
-
-console.log('🚀 Genra plattform lastet!');
+console.log('🚀 Genra plattform lastet med salt-basert sikkerhet og chat!');
