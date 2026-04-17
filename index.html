@@ -1,4 +1,7 @@
-fixed_html = '''<!DOCTYPE html>
+
+# Oppdatert HTML med chat-fane og Google/LinkedIn klargjort
+
+updated_html_chat = '''<!DOCTYPE html>
 <html lang="no">
 <head>
     <meta charset="UTF-8">
@@ -6,6 +9,14 @@ fixed_html = '''<!DOCTYPE html>
     <title>Genra - Bytt tjeneste, bygg fellesskap</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <!-- Google Sign-In API -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <!-- LinkedIn SDK (valgfritt, kan brukes for bedre integrasjon) -->
+    <script type="text/javascript" src="https://platform.linkedin.com/in.js">
+        api_key: DIN_LINKEDIN_CLIENT_ID
+        authorize: true
+        onLoad: onLinkedInLoad
+    </script>
 </head>
 <body>
     <!-- Navigation -->
@@ -206,38 +217,40 @@ fixed_html = '''<!DOCTYPE html>
 
                 <!-- Register Form -->
                 <form id="registerForm" class="auth-form active" onsubmit="handleRegister(event)">
-                    <div class="auth-methods">
-                        <button type="button" class="auth-method active" onclick="setAuthMethod('email')">E-post</button>
-                        <button type="button" class="auth-method" onclick="setAuthMethod('phone')">Telefon</button>
+                    <div class="form-group">
+                        <label>Brukernavn *</label>
+                        <input type="text" id="regUsername" placeholder="Velg et brukernavn" required minlength="3" maxlength="20">
+                        <small class="form-hint">3-20 tegn, kun bokstaver og tall</small>
                     </div>
 
-                    <div id="emailFields">
-                        <div class="form-group">
-                            <label>E-post</label>
-                            <input type="email" id="regEmail" placeholder="din@epost.no" required>
+                    <div class="form-group">
+                        <label>E-post *</label>
+                        <input type="email" id="regEmail" placeholder="din@epost.no" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Passord *</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="regPassword" placeholder="Lag et passord" required minlength="8">
+                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('regPassword')">👁️</button>
+                        </div>
+                        <div class="password-strength" id="passwordStrength"></div>
+                        <small class="form-hint">Minst 8 tegn, inkludert stor bokstav, liten bokstav og tall</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Bekreft passord *</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="regPasswordConfirm" placeholder="Gjenta passordet" required>
+                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('regPasswordConfirm')">👁️</button>
                         </div>
                     </div>
 
-                    <div id="phoneFields" style="display: none;">
-                        <div class="form-group">
-                            <label>Telefonnummer</label>
-                            <input type="tel" id="regPhone" placeholder="+47 123 45 678">
-                        </div>
-                    </div>
-
                     <div class="form-group">
-                        <label>Brukernavn</label>
-                        <input type="text" id="regUsername" placeholder="Velg et brukernavn" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Passord</label>
-                        <input type="password" id="regPassword" placeholder="Lag et passord" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Bekreft passord</label>
-                        <input type="password" id="regPasswordConfirm" placeholder="Gjenta passordet" required>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="acceptTerms" required>
+                            <span>Jeg godtar <a href="#" onclick="showTerms()">vilkårene</a> og har lest <a href="#" onclick="showPrivacy()">personvernerklæringen</a></span>
+                        </label>
                     </div>
 
                     <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Opprett konto</button>
@@ -246,21 +259,46 @@ fixed_html = '''<!DOCTYPE html>
                 <!-- Login Form -->
                 <form id="loginForm" class="auth-form" onsubmit="handleLogin(event)">
                     <div class="form-group">
-                        <label>E-post eller brukernavn</label>
-                        <input type="text" id="loginIdentifier" placeholder="din@epost.no" required>
+                        <label>E-post</label>
+                        <input type="email" id="loginEmail" placeholder="din@epost.no" required>
                     </div>
 
                     <div class="form-group">
                         <label>Passord</label>
-                        <input type="password" id="loginPassword" placeholder="Ditt passord" required>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="loginPassword" placeholder="Ditt passord" required>
+                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('loginPassword')">👁️</button>
+                        </div>
                     </div>
 
                     <div style="text-align: right; margin-bottom: 1rem;">
-                        <a href="#" style="color: var(--text-secondary); font-size: 0.9rem; text-decoration: none;">Glemt passord?</a>
+                        <a href="#" onclick="showForgotPassword()" style="color: var(--text-secondary); font-size: 0.9rem; text-decoration: none;">Glemt passord?</a>
                     </div>
 
                     <button type="submit" class="btn btn-primary" style="width: 100%;">Logg inn</button>
                 </form>
+
+                <div class="divider">eller</div>
+
+                <!-- Sosial innlogging -->
+                <div class="social-login">
+                    <button class="btn btn-social btn-google" onclick="signInWithGoogle()">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        Fortsett med Google
+                    </button>
+                    
+                    <button class="btn btn-social btn-linkedin" onclick="signInWithLinkedIn()">
+                        <svg viewBox="0 0 24 24" width="20" height="20">
+                            <path fill="currentColor" d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/>
+                        </svg>
+                        Fortsett med LinkedIn
+                    </button>
+                </div>
 
                 <div class="divider">eller</div>
 
@@ -291,6 +329,10 @@ fixed_html = '''<!DOCTYPE html>
                             </div>
                             <div class="sidebar-item" onclick="showDashboardTab('categories')" id="dash-tab-categories">
                                 <span>📂</span> Kategorier
+                            </div>
+                            <div class="sidebar-item" onclick="showDashboardTab('chat')" id="dash-tab-chat">
+                                <span>💬</span> Chat
+                                <span class="sidebar-badge" id="chatBadge">3</span>
                             </div>
                             <div class="sidebar-item" onclick="showDashboardTab('history')" id="dash-tab-history">
                                 <span>📊</span> Historikk
@@ -329,36 +371,9 @@ fixed_html = '''<!DOCTYPE html>
                             </div>
 
                             <h3 style="margin-bottom: 1rem; font-size: 1.2rem;">Mine kategorier</h3>
-                            <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.95rem;">Velg kategoriene du tilhører (klikk for å velge/fjerne):</p>
+                            <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.95rem;">Kategoriene du har valgt å tilhøre:</p>
                             <div class="profile-categories" id="profileCategories">
-                                <button class="category-btn-small" onclick="toggleProfileCategory('akademisk')" data-category="akademisk">
-                                    <span class="category-icon">📚</span>
-                                    <span>Akademisk støtte</span>
-                                </button>
-                                <button class="category-btn-small" onclick="toggleProfileCategory('markedsforing')" data-category="markedsforing">
-                                    <span class="category-icon">🎨</span>
-                                    <span>Markedsføring og design</span>
-                                </button>
-                                <button class="category-btn-small" onclick="toggleProfileCategory('okonomi')" data-category="okonomi">
-                                    <span class="category-icon">💰</span>
-                                    <span>Økonomi og regnskap</span>
-                                </button>
-                                <button class="category-btn-small" onclick="toggleProfileCategory('praktiske')" data-category="praktiske">
-                                    <span class="category-icon">🔧</span>
-                                    <span>Praktiske tjenester</span>
-                                </button>
-                                <button class="category-btn-small" onclick="toggleProfileCategory('teknisk')" data-category="teknisk">
-                                    <span class="category-icon">💻</span>
-                                    <span>Teknisk bistand</span>
-                                </button>
-                                <button class="category-btn-small" onclick="toggleProfileCategory('hage')" data-category="hage">
-                                    <span class="category-icon">🌱</span>
-                                    <span>Hagearbeid og montering</span>
-                                </button>
-                                <button class="category-btn-small" onclick="toggleProfileCategory('nettverk')" data-category="nettverk">
-                                    <span class="category-icon">🤝</span>
-                                    <span>Nettverksbygging</span>
-                                </button>
+                                <p style="color: var(--text-secondary); width: 100%;" id="noCategoriesMsg">Du har ikke lagt til noen kategorier ennå. Gå til "Kategorier" for å legge til.</p>
                             </div>
 
                             <h3 style="margin-bottom: 1rem; font-size: 1.2rem; margin-top: 2rem;">Mine ferdigheter</h3>
@@ -568,52 +583,47 @@ fixed_html = '''<!DOCTYPE html>
                         <div id="dash-content-categories" class="content-section">
                             <div class="categories-container">
                                 <div class="categories-header">
-                                    <h2>Velg en kategori:</h2>
-                                    <p class="categories-subtitle">— Klikk for å se tilgjengelige tjenester —</p>
+                                    <h2>Velg dine kategorier</h2>
+                                    <p class="categories-subtitle">— Klikk på "Legg til" for å legge kategorier til profilen din —</p>
                                 </div>
                                 
                                 <div class="categories-grid" id="categoriesGrid">
-                                    <button class="category-btn" onclick="selectCategory('akademisk')">
-                                        <span class="category-icon">📚</span>
-                                        Akademisk støtte
-                                    </button>
-                                    <button class="category-btn" onclick="selectCategory('markedsforing')">
-                                        <span class="category-icon">🎨</span>
-                                        Markedsføring og design
-                                    </button>
-                                    <button class="category-btn" onclick="selectCategory('okonomi')">
-                                        <span class="category-icon">💰</span>
-                                        Økonomi og regnskap
-                                    </button>
-                                    <button class="category-btn" onclick="selectCategory('praktiske')">
-                                        <span class="category-icon">🔧</span>
-                                        Praktiske tjenester
-                                    </button>
-                                    <button class="category-btn" onclick="selectCategory('teknisk')">
-                                        <span class="category-icon">💻</span>
-                                        Teknisk bistand
-                                    </button>
-                                    <button class="category-btn" onclick="selectCategory('hage')">
-                                        <span class="category-icon">🌱</span>
-                                        Hagearbeid og montering
-                                    </button>
-                                    <button class="category-btn category-btn-full" onclick="selectCategory('nettverk')">
-                                        <span class="category-icon">🤝</span>
-                                        Nettverksbygging
-                                    </button>
+                                    <!-- Kategorier genereres av JavaScript -->
                                 </div>
                             </div>
-                            
-                            <!-- Selected Category View -->
-                            <div id="categoryView" class="category-view hidden">
-                                <div class="category-view-header">
-                                    <button class="btn btn-secondary" onclick="backToCategories()" style="width: auto; padding: 0.8rem 1.5rem;">
-                                        ← Tilbake til kategorier
-                                    </button>
-                                    <h3 id="selectedCategoryTitle">Kategori</h3>
+                        </div>
+
+                        <!-- CHAT TAB - NY -->
+                        <div id="dash-content-chat" class="content-section">
+                            <div class="chat-container">
+                                <div class="chat-sidebar">
+                                    <div class="chat-search">
+                                        <input type="text" placeholder="Søk etter samtaler..." id="chatSearch">
+                                    </div>
+                                    <div class="chat-list" id="chatList">
+                                        <!-- Samtaler genereres av JavaScript -->
+                                    </div>
                                 </div>
-                                <div class="category-content" id="categoryContent">
-                                    <!-- Dynamic content will be loaded here -->
+                                <div class="chat-main">
+                                    <div class="chat-header" id="chatHeader">
+                                        <div class="chat-empty-header">
+                                            <span style="font-size: 2rem;">💬</span>
+                                            <p>Velg en samtale for å starte chatting</p>
+                                        </div>
+                                    </div>
+                                    <div class="chat-messages" id="chatMessages">
+                                        <!-- Meldinger genereres av JavaScript -->
+                                    </div>
+                                    <div class="chat-input-area">
+                                        <div class="chat-input-wrapper">
+                                            <input type="text" id="chatInput" placeholder="Skriv en melding..." disabled>
+                                            <button class="chat-send-btn" onclick="sendMessage()" disabled>
+                                                <svg viewBox="0 0 24 24" width="24" height="24">
+                                                    <path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -659,10 +669,4 @@ fixed_html = '''<!DOCTYPE html>
     <script src="script.js"></script>
 </body>
 </html>'''
-
-
-
-
-
-
 
